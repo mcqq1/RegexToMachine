@@ -1,16 +1,15 @@
-from treelib import Tree, Node
-from my_compiler.nodes import RegexNode
+import treelib
+from my_compiler import nodes
 
+def visualize_tree(head_node: nodes.Node):
+    
+    def get_node(current_node) -> treelib.Node:
+        pass
+    
+    tree = treelib.Tree()
 
-def visualize_tree(parsed_tree: list[RegexNode]):
-    tree = Tree()
+    tree.create_node("Regex") # root node
+    tree.create_node()
 
-    tree.create_node("Regex")
-
-    for node in parsed_tree:
-        
-        tree.create_node(node)
-        
-        
 
     tree.show()

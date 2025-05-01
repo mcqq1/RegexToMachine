@@ -1,47 +1,64 @@
+from my_compiler.nodes import (
+    Symbol,
+    Concat,
+    Alternative,
+    Optional,
+    KleeneClosure,
+    EmptyString,
+)
 
 
 class Parser:
+    def __init__(self, input_):
+        self.input = input_
+        self.pos = 0
 
-    def __init__(self):
-        cursor: int = 0
+    def current(self):
+        return self.input[self.pos] if self.pos < len(self.input) else None
 
-    def parse(self, input_: str):
-        stack: list = []
+    def consume(self):
+        self.pos += 1
 
-        for idx, token in enumerate(input_):
+    def match(self, expected):
+        if self.current() == expected:
+            self.consume()
+            return True
+        return False
 
-            match token:
+    def parse_expression(self):
+        left = self.parse_term()
+        while self.match("|"):
+            right = self.parse_term()
+            left = Alternative(left, right)
+        return left
 
-                case "|":
-                    self.parse_alternative()
+    def parse_term(self):
+        factors = []
+        while self.current() and self.current() not in "|)]}":
+            factors.append(self.parse_factor())
+        return factors[0] if len(factors) == 1 else Concat(factors)
 
-                case "{":
-                    self.parse_kleen()
+    def parse_factor(self):
+        char = self.current()
 
-                case "[":
-                    self.parse_optional()
-                
-                case _:
-                    self.parse_sentence()
-                
-
-    def parse_empty(self):
-        pass
-
-    def parse_sentence(self):
-        pass
-
-    def parse_alternative(self):
-        pass
-
-    def parse_kleen(self):
-        pass
-
-    def parse_optional(self):
-        pass
-
-
-if __name__ == "__main__":
-    parser = Parser()
-
-    print(parser.parse("{}"))
+        if char == "(":
+            self.consume()
+            expr = self.parse_expression()
+            assert self.match(")"), "Expected ')'"
+            return expr
+        elif char == "[":
+            self.consume()
+            expr = self.parse_expression()
+            assert self.match("]"), "Expected ']'"
+            return Optional(expr)
+        elif char == "{":
+            self.consume()
+            expr = self.parse_expression()
+            assert self.match("}"), "Expected '}'"
+            return KleeneClosure(expr)
+        elif char == "ε":
+            self.consume()
+            return EmptyString()
+        else:
+            self.consume()
+            return Symbol(char)
