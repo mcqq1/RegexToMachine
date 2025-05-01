@@ -1,35 +1,33 @@
 class Node:
 
-    def __init__(self, keychars: list[str], children: list["Node"]):
-        self.keychars = keychars
+    def __init__(self, children: list["Node"]):
         self.children = children
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.children})"
+
+
+class Symbol(Node):
+    keychars: list[str] = None
 
 
 class Alternative(Node):
 
-    def __repr__(self):
-        return f"Alternative()"
+    keychars: list[str] = ["|"]
 
 
 class KleeneClosure(Node):
 
-    def __repr__(self):
-        return f"KleeneClosure({self.expr})"
+    keychars: list[str] = ["{", "}"]
+    is_bracket: bool = True
 
 
 class Optional(Node):
 
-    def __repr__(self):
-        return f"Optional({self.expr})"
-
-
-class Symbol(Node):
-
-    def __repr__(self):
-        return f"Symbol({self.symbol})"
+    keychars: list[str] = ["[", "]"]
+    is_bracket: bool = True
 
 
 class EmptyString(Node):
 
-    def __repr__(self):
-        return "EmptyString()"
+    keychars: list[str] = ["ε"]
