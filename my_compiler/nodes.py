@@ -1,35 +1,35 @@
-class RegexNode:
-    pass
+class Node:
 
-class Alternative(RegexNode):
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
-    
+    def __init__(self, keychars: list[str], children: list["Node"]):
+        self.keychars = keychars
+        self.children = children
+
+
+class Alternative(Node):
+
     def __repr__(self):
-        return f"Alternative({self.left}, {self.right})"
+        return f"Alternative()"
 
-class KleeneClosure(RegexNode):
-    def __init__(self, expr):
-        self.expr = expr
-    
+
+class KleeneClosure(Node):
+
     def __repr__(self):
         return f"KleeneClosure({self.expr})"
 
-class Optional(RegexNode):
-    def __init__(self, expr):
-        self.expr = expr
-    
+
+class Optional(Node):
+
     def __repr__(self):
         return f"Optional({self.expr})"
 
-class Symbol(RegexNode):
-    def __init__(self, symbol):
-        self.symbol = symbol
-    
+
+class Symbol(Node):
+
     def __repr__(self):
         return f"Symbol({self.symbol})"
 
-class EmptyString(RegexNode):
+
+class EmptyString(Node):
+
     def __repr__(self):
         return "EmptyString()"
