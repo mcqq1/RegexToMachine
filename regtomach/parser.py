@@ -1,5 +1,5 @@
 from anytree import Node as AnyNode
-from regtomach.ast import AbstractSyntaxTree
+from regtomach.abstract_syntax_tree import AbstractSyntaxTree
 
 class Parser:
     def __init__(self, input_):
