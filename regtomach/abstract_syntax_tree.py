@@ -1,17 +1,17 @@
-from anytree import Node, RenderTree, DoubleStyle
+from anytree import RenderTree, DoubleStyle
 from anytree.exporter import DotExporter
 from loguru import logger
 
+from regtomach.nodes import ASTNode
 
 class AbstractSyntaxTree:
-
-    def __init__(self, head: Node):
+    def __init__(self, head: ASTNode):
         self.head = head
 
     def __repr__(self):
         my_repr: str = ""
         for pre, fill, node in RenderTree(self.head, style=DoubleStyle):
-            my_repr += "%s%s" % (pre, node.name) + "\n"
+            my_repr += "%s%s" % (pre, node) + "\n"
         return my_repr
 
     def save_to_png(self, filename: str = "tree.png"):
@@ -23,10 +23,5 @@ class AbstractSyntaxTree:
 
         except Exception as e:
             logger.error(
-                "Failed to create png file with your syntax tree.",
-                {str(e)},
+                f"Failed to create png file with your syntax tree. {str(e)}"
             )
-
-
-    def to_drf(self):
-        pass
