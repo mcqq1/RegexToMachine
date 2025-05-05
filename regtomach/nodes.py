@@ -1,35 +1,33 @@
-from anytree import NodeMixin
+from anytree import AnyNode
 
-class ASTNode(NodeMixin):
-    def __init__(self, parent=None):
-        self.parent = parent
-    
-    @property
-    def name(self):
-        return self.__repr__()
-    
-    def __repr__(self):
-        repr: str = self.__class__.__name__
-        if hasattr(self, "symbol"):
-            repr += f"({self.symbol})"
-        return repr
 
-class Symbol(ASTNode):
-    def __init__(self, symbol, parent=None):
-        super().__init__(parent)
-        self.symbol = symbol
+class Literal(AnyNode):
+    def __init__(self, value, parent=None):
+        super().__init__(name=f"Literal({value})", parent=parent)
+        self.value = value
 
-class Alternative(ASTNode):
-    pass
 
-class Concat(ASTNode):
-    pass
+class Sequence(AnyNode):
+    def __init__(self, children, parent=None):
+        super().__init__(name="Sequence", parent=parent)
+        for child in children:
+            child.parent = self
 
-class Optional(ASTNode):
-    pass
 
-class KleeneClosure(ASTNode):
-    pass
+class Kleene(AnyNode):
+    def __init__(self, child, parent=None):
+        super().__init__(name="Kleene", parent=parent)
+        child.parent = self
 
-class EmptyString(ASTNode):
-    pass
+
+class Optional(AnyNode):
+    def __init__(self, child, parent=None):
+        super().__init__(name="Optional", parent=parent)
+        child.parent = self
+
+
+class Alternative(AnyNode):
+    def __init__(self, branches, parent=None):
+        super().__init__(name="Alternative", parent=parent)
+        for br in branches:
+            br.parent = self

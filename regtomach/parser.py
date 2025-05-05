@@ -1,74 +1,80 @@
-from regtomach.nodes import Optional, Alternative, Concat, KleeneClosure, Symbol, EmptyString
-from regtomach.abstract_syntax_tree import AbstractSyntaxTree
-
+from regtomach.nodes import Alternative, Kleene, Optional, Sequence, Literal
+from regtomach.ast import AbstractSyntaxTree
 
 class Parser:
-    def __init__(self, input_str):
-        self.input = input_str
+    def __init__(self, regex):
+        self.regex = regex
         self.pos = 0
     
-    def generate_syntax_tree(self):
+    def to_abstract_syntax_tree(self) -> AbstractSyntaxTree:
         return AbstractSyntaxTree(self.parse())
 
-    def peek(self):
-        return self.input[self.pos] if self.pos < len(self.input) else None
-
-    def consume(self):
-        current = self.peek()
-        self.pos += 1
-        return current
-
     def parse(self):
-        return self.parse_alternative()
-
-    def parse_alternative(self):
-        alternatives = [self.parse_concat()]
-        while self.peek() == "|":
-            self.consume()  # consume '|'
-            alternatives.append(self.parse_concat())
-        if len(alternatives) == 1:
-            return alternatives[0]
-        alt_node = Alternative()
-        for child in alternatives:
-            child.parent = alt_node
-        return alt_node
-
-    def parse_concat(self):
-        nodes = []
-        while self.peek() and self.peek() not in "|]}":
-            nodes.append(self.parse_quantified())
-        if len(nodes) == 1:
-            return nodes[0]
-        concat_node = Concat()
-        for child in nodes:
-            child.parent = concat_node
-        return concat_node
-
-    def parse_quantified(self):
-        node = self.parse_atom()
-        while self.peek() and self.peek() in "[{":
-            if self.peek() == "[":
-                self.consume()  # consume '['
-                opt_node = Optional()
-                self.parse_inner(node, opt_node, "]")
-                node = opt_node
-            elif self.peek() == "{":
-                self.consume()  # consume '{'
-                kleene_node = KleeneClosure()
-                self.parse_inner(node, kleene_node, "}")
-                node = kleene_node
+        node = self._parse_expression()
+        if self.pos < len(self.regex):
+            raise ValueError(
+                f"Unexpected character at pos {self.pos}: {self.regex[self.pos]}"
+            )
         return node
 
-    def parse_inner(self, child, parent_node, end_char):
-        child.parent = parent_node
-        while self.peek() and self.peek() != end_char:
-            self.parse_concat().parent = parent_node
-        self.consume()  # consume the closing ']' or '}'
+    def _peek(self):
+        return self.regex[self.pos] if self.pos < len(self.regex) else None
 
-    def parse_atom(self):
-        char = self.peek()
-        if char is None:
-            return EmptyString()
-        elif char not in "|[]{}":
-            return Symbol(self.consume())
-        return EmptyString()
+    def _parse_expression(self):
+        # parse branches separated by |
+        branches = [self._parse_term()]
+        while self._peek() == "|":
+            self.pos += 1
+            branches.append(self._parse_term())
+        if len(branches) > 1:
+            return Alternative(branches)
+        return branches[0]
+
+    def _parse_term(self):
+        # parse sequence of factors
+        factors = []
+        while True:
+            c = self._peek()
+            if c is None or c in "]|}":
+                break
+            if c == "|":
+                break
+            factors.append(self._parse_factor())
+        if len(factors) > 1:
+            return Sequence(factors)
+        elif factors:
+            return factors[0]
+        else:
+            # empty sequence => treat as empty literal
+            return Literal("")
+
+    def _parse_factor(self):
+        c = self._peek()
+        if c == "{":
+            return self._parse_group(Kleene, "{", "}")
+        elif c == "[":
+            return self._parse_group(Optional, "[", "]")
+        else:
+            # literal (any non-special)
+            self.pos += 1
+            return Literal(c)
+
+    def _parse_group(self, NodeClass, open_ch, close_ch):
+        # consume opening
+        self.pos += 1
+        start = self.pos
+        depth = 1
+        # find matching close_ch
+        while self.pos < len(self.regex) and depth:
+            if self.regex[self.pos] == open_ch:
+                depth += 1
+            elif self.regex[self.pos] == close_ch:
+                depth -= 1
+            self.pos += 1
+        if depth != 0:
+            raise ValueError(f"Unmatched {open_ch}")
+        # inner text without the final close_ch
+        inner = self.regex[start : self.pos - 1]
+        # parse inner separately
+        child = Parser(inner).parse()
+        return NodeClass(child)
