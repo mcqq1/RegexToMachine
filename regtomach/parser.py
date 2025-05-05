@@ -1,14 +1,20 @@
-
+from regtomach.nodes import Alternative, Kleene, Optional, Sequence, Literal
+from regtomach.ast import AbstractSyntaxTree
 
 class Parser:
     def __init__(self, regex):
         self.regex = regex
         self.pos = 0
+    
+    def to_abstract_syntax_tree(self) -> AbstractSyntaxTree:
+        return AbstractSyntaxTree(self.parse())
 
     def parse(self):
         node = self._parse_expression()
         if self.pos < len(self.regex):
-            raise ValueError(f"Unexpected character at pos {self.pos}: {self.regex[self.pos]}")
+            raise ValueError(
+                f"Unexpected character at pos {self.pos}: {self.regex[self.pos]}"
+            )
         return node
 
     def _peek(self):
@@ -17,7 +23,7 @@ class Parser:
     def _parse_expression(self):
         # parse branches separated by |
         branches = [self._parse_term()]
-        while self._peek() == '|':
+        while self._peek() == "|":
             self.pos += 1
             branches.append(self._parse_term())
         if len(branches) > 1:
@@ -29,9 +35,9 @@ class Parser:
         factors = []
         while True:
             c = self._peek()
-            if c is None or c in ']|}':
+            if c is None or c in "]|}":
                 break
-            if c == '|':
+            if c == "|":
                 break
             factors.append(self._parse_factor())
         if len(factors) > 1:
@@ -40,14 +46,14 @@ class Parser:
             return factors[0]
         else:
             # empty sequence => treat as empty literal
-            return Literal('')
+            return Literal("")
 
     def _parse_factor(self):
         c = self._peek()
-        if c == '{':
-            return self._parse_group(Kleene, '{', '}')
-        elif c == '[':
-            return self._parse_group(Optional, '[', ']')
+        if c == "{":
+            return self._parse_group(Kleene, "{", "}")
+        elif c == "[":
+            return self._parse_group(Optional, "[", "]")
         else:
             # literal (any non-special)
             self.pos += 1
@@ -68,11 +74,7 @@ class Parser:
         if depth != 0:
             raise ValueError(f"Unmatched {open_ch}")
         # inner text without the final close_ch
-        inner = self.regex[start:self.pos-1]
+        inner = self.regex[start : self.pos - 1]
         # parse inner separately
-        child = RegexParser(inner).parse()
+        child = Parser(inner).parse()
         return NodeClass(child)
-
-def parse_regex(rgx: str) -> AnyNode:
-    """Parse `rgx` into an anytree AST."""
-    return RegexParser(rgx).parse()
