@@ -1,5 +1,4 @@
 from anytree import RenderTree, AnyNode
-from anytree.dotexport import RenderTreeGraph
 
 
 class AbstractSyntaxTree:
